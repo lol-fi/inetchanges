@@ -63,6 +63,7 @@ class INET_API ReturnTailQueue : public PassiveQueueBase
      */
     virtual bool isEmpty() override;
 
+  public:
     virtual int length();
 };
 

@@ -25,7 +25,7 @@
 #include "inet/common/Protocol.h"
 #include "inet/common/ProtocolTag_m.h"
 #include "inet/common/lifecycle/NodeOperations.h"
-
+#include "inet/common/queue/ReturnTailQueue.h"
 namespace inet {
 
 Define_Module(MacRelayUnit);
@@ -82,12 +82,15 @@ void MacRelayUnit::handleAndDispatchFrame(Packet *packet, const Ptr<const Ethern
     }
 
     // Finds output port of destination address and sends to output port
-    // TODO
-
     // if not found then broadcasts to all other ports instead
+
     // get, from the output interface, the queue length, and if it's longer
     // than the threshold, then get source to set as output interface id instead of dest
     int outputInterfaceId = addressTable->getPortForAddress(frame->getDest());
+    cModule* queueModul = getParentModule()->getSubmodule("eth", outputInterfaceId)->getSubmodule("queueModule");
+    EV << "Queue module length is: " << ((ReturnTailQueue*) queueModul)->length() << endl;
+
+
     // should not send out the same frame on the same ethernet port
     // (although wireless ports are ok to receive the same message)
     if (inputInterfaceId == outputInterfaceId) {
