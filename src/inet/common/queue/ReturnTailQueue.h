@@ -32,6 +32,7 @@ class INET_API ReturnTailQueue : public PassiveQueueBase
   protected:
     // configuration
     int frameCapacity;
+    int threshold;
 
     // state
     cQueue queue;
@@ -64,7 +65,7 @@ class INET_API ReturnTailQueue : public PassiveQueueBase
     virtual bool isEmpty() override;
 
   public:
-    virtual int length();
+    virtual bool tooFull();
 };
 
 } // namespace inet

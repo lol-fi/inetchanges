@@ -88,18 +88,21 @@ void MacRelayUnit::handleAndDispatchFrame(Packet *packet, const Ptr<const Ethern
     // than the threshold, then get source to set as output interface id instead of dest
     int outputInterfaceId = addressTable->getPortForAddress(frame->getDest());
     cModule* queueModul = getParentModule()->getSubmodule("eth", outputInterfaceId)->getSubmodule("queueModule");
-    EV << "Queue module length is: " << ((ReturnTailQueue*) queueModul)->length() << endl;
-
-
-    // should not send out the same frame on the same ethernet port
-    // (although wireless ports are ok to receive the same message)
-    if (inputInterfaceId == outputInterfaceId) {
-        EV << "Output port is same as input port, " << packet->getFullName()
-           << " dest " << frame->getDest() << ", discarding frame\n";
-        numDiscardedFrames++;
-        delete packet;
-        return;
+    EV << "Queue module length is: " << ((ReturnTailQueue*) queueModul)->tooFull() << endl;
+    if (((ReturnTailQueue*)queueModul)->tooFull()) {
+        outputInterfaceId = inputInterfaceId;
     }
+
+
+//     should not send out the same frame on the same ethernet port
+//     (although wireless ports are ok to receive the same message)
+//    if (inputInterfaceId == outputInterfaceId) {
+//        EV << "Output port is same as input port, " << packet->getFullName()
+//           << " dest " << frame->getDest() << ", discarding frame\n";
+//        numDiscardedFrames++;
+//        delete packet;
+//        return;
+//    }
 
     if (outputInterfaceId >= 0) {
         EV << "Sending frame " << frame << " with dest address " << frame->getDest() << " to port " << outputInterfaceId << endl;

@@ -38,15 +38,16 @@ void ReturnTailQueue::initialize()
 
     // configuration
     frameCapacity = par("frameCapacity");
+    threshold = par("threshold");
 
 }
 
 cMessage *ReturnTailQueue::enqueue(cMessage *msg)
 {
     //drop beyond threshold
-    if (frameCapacity && queue.getLength() >= frameCapacity) {
+    if (frameCapacity && queue.getLength() >= threshold) {
         EV << "Queue full, returning packet.\n";
-        return msg;
+        return nullptr;
     }
     else {
         queue.insert(msg);
@@ -73,9 +74,9 @@ void ReturnTailQueue::sendOut(cMessage *msg)
     send(msg, outGate);
 }
 
-int ReturnTailQueue::length()
+bool ReturnTailQueue::tooFull()
 {
-    return queue.getLength();
+    return (queue.getLength() >= threshold);
 }
 
 bool ReturnTailQueue::isEmpty()
