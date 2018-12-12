@@ -79,3 +79,5 @@ backups
 *~
 xxx
 /tmp/
+.cproject
+src/inet/tags

@@ -66,7 +66,7 @@ module EtherSwitch
         macTable: <default("MacAddressTable")> like IMacAddressTable {
             @display("p=100,100;is=s");
         }
-        relayUnit: <default(firstAvailable("Ieee8021dRelay","MacRelayUnit"))> like IMacRelayUnit {
+        relayUnit: <default("MacRelayUnit")> like IMacRelayUnit {
             @display("p=400,100;is=m");
         }
         stp: <spanningTreeProtocol> like ISpanningTree if spanningTreeProtocol != "" {

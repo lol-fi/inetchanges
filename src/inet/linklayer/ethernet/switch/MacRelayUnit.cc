@@ -32,6 +32,7 @@ Define_Module(MacRelayUnit);
 
 void MacRelayUnit::initialize(int stage)
 {
+    EV << "MacRelayUnit init" << endl;
     if (stage == INITSTAGE_LOCAL) {
         numProcessedFrames = numDiscardedFrames = 0;
 
@@ -47,10 +48,14 @@ void MacRelayUnit::initialize(int stage)
         registerService(Protocol::ethernetMac, nullptr, gate("ifIn"));
         registerProtocol(Protocol::ethernetMac, gate("ifOut"), nullptr);
     }
+
+    EV << "MacRelayUnit init" << endl;
 }
 
 void MacRelayUnit::handleMessage(cMessage *msg)
 {
+    EV << "MacRelayUnit handleMessage" << endl;
+
     if (!isOperational) {
         EV << "Message '" << msg << "' arrived when module status is down, dropped it\n";
         delete msg;
@@ -87,10 +92,13 @@ void MacRelayUnit::handleAndDispatchFrame(Packet *packet, const Ptr<const Ethern
     // get, from the output interface, the queue length, and if it's longer
     // than the threshold, then get source to set as output interface id instead of dest
     int outputInterfaceId = addressTable->getPortForAddress(frame->getDest());
-    cModule* queueModul = getParentModule()->getSubmodule("eth", outputInterfaceId)->getSubmodule("queueModule");
-    EV << "Queue module length is: " << ((ReturnTailQueue*) queueModul)->tooFull() << endl;
-    if (((ReturnTailQueue*)queueModul)->tooFull()) {
+
+    EV << "MacRelayUnit handleAndDispatchFrame " << outputInterfaceId << endl;
+    ReturnTailQueue* queue = (ReturnTailQueue*) getParentModule()->getSubmodule("eth", outputInterfaceId-100)->getSubmodule("queue");
+    EV << "MacRelayUnit Queue module length is: " << queue->tooFull() << endl;
+    if (queue->tooFull()) {
         outputInterfaceId = inputInterfaceId;
+        EV << "MacRelayUnit queue_too_full outputinterface:" << outputInterfaceId << endl;
     }
 
 
@@ -114,6 +122,9 @@ void MacRelayUnit::handleAndDispatchFrame(Packet *packet, const Ptr<const Ethern
         packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(outputInterfaceId);
         packet->trim();
         emit(packetSentToLowerSignal, packet);
+        if (queue->tooFull()) {
+            EV << "MacRelayUnit queue_too_full2 outputinterface:" << outputInterfaceId << endl;
+        }
         send(packet, "ifOut");
     }
     else {
