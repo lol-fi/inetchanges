@@ -44,10 +44,11 @@ void ReturnTailQueue::initialize()
 
 cMessage *ReturnTailQueue::enqueue(cMessage *msg)
 {
-    //drop beyond threshold
+    EV << "ReturnTailQueue enqueue " << msg << endl;
+    //return beyond threshold
     if (frameCapacity && queue.getLength() >= threshold) {
-        EV << "Queue full, returning packet.\n";
-        return msg;
+        EV << "ReturnTailQueue full, returning packet.\n";
+        return nullptr;
     }
     else {
         queue.insert(msg);

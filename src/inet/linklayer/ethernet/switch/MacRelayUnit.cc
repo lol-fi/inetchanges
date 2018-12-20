@@ -92,12 +92,23 @@ void MacRelayUnit::handleAndDispatchFrame(Packet *packet, const Ptr<const Ethern
     // get, from the output interface, the queue length, and if it's longer
     // than the threshold, then get source to set as output interface id instead of dest
     int outputInterfaceId = addressTable->getPortForAddress(frame->getDest());
+    EV << "MacRelayUnit handleAndDispatchFrame frameSrc: " << frame->getSrc() << " frameDst: " << frame->getDest() << endl;
 
-    EV << "MacRelayUnit handleAndDispatchFrame " << outputInterfaceId << endl;
+    EV << "MacRelayUnit handleAndDispatchFrame input: " << inputInterfaceId << " output: " << outputInterfaceId << endl;
     ReturnTailQueue* queue = (ReturnTailQueue*) getParentModule()->getSubmodule("eth", outputInterfaceId-100)->getSubmodule("queue");
     EV << "MacRelayUnit Queue module length is: " << queue->tooFull() << endl;
     if (queue->tooFull()) {
         outputInterfaceId = inputInterfaceId;
+        EV << "MacRelayUnit handleAndDispatchFrame packet header popped" << endl;
+        const auto& oldMacHeader = packet->removeAtFront<EthernetMacHeader>();
+        const auto& newMacHeader = makeShared<EthernetMacHeader>();
+        EV << "MacRelayUnit handleAndDispatchFrame oldMacHeadersrc: " << oldMacHeader->getSrc() << " oldMacHeaderdest: " << oldMacHeader->getDest() << endl;
+        newMacHeader->setDest(oldMacHeader->getSrc());
+        newMacHeader->setSrc(oldMacHeader->getDest());
+        EV << "MacRelayUnit handleAndDispatchFrame newMacHeadersrc: " << newMacHeader->getSrc() << " newMacHeaderdest: " << newMacHeader->getDest() << endl;
+        newMacHeader->setTypeOrLength(oldMacHeader->getTypeOrLength());
+        packet->insertAtFront(newMacHeader);
+        packet->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&Protocol::ethernetMac);
         EV << "MacRelayUnit queue_too_full outputinterface:" << outputInterfaceId << endl;
     }
 
@@ -111,9 +122,9 @@ void MacRelayUnit::handleAndDispatchFrame(Packet *packet, const Ptr<const Ethern
 //        delete packet;
 //        return;
 //    }
-
+    const auto& frame2 = packet->peekAtFront<EthernetMacHeader>();
     if (outputInterfaceId >= 0) {
-        EV << "Sending frame " << frame << " with dest address " << frame->getDest() << " to port " << outputInterfaceId << endl;
+        EV << "Sending frame2 " << frame2 << " with dest address " << frame2->getDest() << " to port " << outputInterfaceId << endl;
         auto oldPacketProtocolTag = packet->removeTag<PacketProtocolTag>();
         packet->clearTags();
         auto newPacketProtocolTag = packet->addTag<PacketProtocolTag>();
@@ -122,13 +133,11 @@ void MacRelayUnit::handleAndDispatchFrame(Packet *packet, const Ptr<const Ethern
         packet->addTagIfAbsent<InterfaceReq>()->setInterfaceId(outputInterfaceId);
         packet->trim();
         emit(packetSentToLowerSignal, packet);
-        if (queue->tooFull()) {
-            EV << "MacRelayUnit queue_too_full2 outputinterface:" << outputInterfaceId << endl;
-        }
+        EV << "MacRelayUnit sending packet outputinterface " << outputInterfaceId << endl;
         send(packet, "ifOut");
     }
     else {
-        EV << "Dest address " << frame->getDest() << " unknown, broadcasting frame " << packet << endl;
+        EV << "Dest address " << frame2->getDest() << " unknown, broadcasting frame " << packet << endl;
         broadcastFrame(packet, inputInterfaceId);
     }
 }
